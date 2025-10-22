@@ -6,26 +6,23 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(express.json());
 
-// CORS middleware - manually set headers
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Max-Age', '86400');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Engrain API is running' });
-});
-
 // Gemini AI endpoint
 app.post('/api/gemini', async (req, res) => {
+  // Set CORS headers on EVERY response (Solution 2)
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+  );
+
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   try {
     const { prompt } = req.body;
 
@@ -98,6 +95,11 @@ app.post('/api/gemini', async (req, res) => {
       message: error.message,
     });
   }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK' });
 });
 
 app.listen(PORT, () => {
