@@ -1,22 +1,23 @@
 const express = require('express');
-const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS middleware - MUST be before routes
-const corsOptions = {
-  origin: '*', // Allow all origins
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
-  credentials: false,
-};
-
-app.use(cors(corsOptions));
+// Middleware
 app.use(express.json());
 
-// Explicit OPTIONS handler for preflight
-app.options('*', cors(corsOptions));
+// CORS middleware - manually set headers
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -101,5 +102,4 @@ app.post('/api/gemini', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`✅ Engrain API running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
 });
