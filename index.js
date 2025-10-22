@@ -4,9 +4,19 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+// CORS middleware - MUST be before routes
+const corsOptions = {
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: false,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Explicit OPTIONS handler for preflight
+app.options('*', cors(corsOptions));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
