@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: engrain-api
+    runtime: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: OPENAI_API_KEY
+        scope: runtime
