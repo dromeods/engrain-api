@@ -1,14 +1,20 @@
 const express = require('express');
+const OpenAI = require('openai');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 // Middleware
 app.use(express.json());
 
-// Gemini AI endpoint
+// OpenAI API endpoint
 app.post('/api/gemini', async (req, res) => {
-  // Set CORS headers on EVERY response (Solution 2)
+  // Set CORS headers on EVERY response
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -30,59 +36,34 @@ app.post('/api/gemini', async (req, res) => {
       return res.status(400).json({ error: 'No prompt provided' });
     }
 
-    // Get API key from environment
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-    if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY not configured');
+    // Check if API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY not configured');
       return res.status(500).json({
         error: 'Server configuration error',
-        message: 'GEMINI_API_KEY not set'
+        message: 'OPENAI_API_KEY not set',
       });
     }
 
-    console.log('Calling Gemini API...');
+    console.log('Calling OpenAI API with GPT-4o mini...');
 
-    // Call Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }],
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('Gemini API error:', response.status);
-      return res.status(response.status).json({
-        error: `Gemini API error: ${response.status}`,
-      });
-    }
-
-    const data = await response.json();
+    // Call OpenAI API with GPT-4o mini (cheapest model)
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 1024,
+    });
 
     // Extract text from response
-    let textContent = '';
-    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-      const parts = data.candidates[0].content.parts;
-      if (parts && parts[0] && parts[0].text) {
-        textContent = parts[0].text;
-      }
-    }
+    const textContent = response.choices[0].message.content;
 
-    console.log('✅ Gemini response generated');
+    console.log('✅ OpenAI response generated');
 
     res.json({
       success: true,
